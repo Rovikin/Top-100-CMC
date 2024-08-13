@@ -16,7 +16,7 @@ cd /sdcard/Top-100-CMC
 Open the python script editor by typing the command:
 
 ```
-nano top_100_cmc_.py
+nano top_100_cmc.py
 ```
 
 on line 5 (API_KEY = 'YOUR-API-KEY') replace 'YOUR-API-KEY' with your Coinmarketcap personal API. Go to Coinmarketcap site to get your API.
