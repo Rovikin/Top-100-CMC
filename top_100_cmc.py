@@ -2,7 +2,7 @@ import requests
 from decimal import Decimal, ROUND_HALF_UP
 
 # Ganti dengan API key Anda
-API_KEY = YOUR-API-KEY'
+API_KEY = 'YOUR-API-KEY'
 BASE_URL = 'https://pro-api.coinmarketcap.com/v1/'
 
 def get_cryptocurrency_listings(limit=100):
