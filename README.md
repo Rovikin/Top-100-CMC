@@ -12,10 +12,6 @@ pip install requests
 cd /sdcard/
 git clone https://github.com/Rovikin/Top-100-CMC.git
 cd /sdcard/Top-100-CMC
-```
-Open the python script editor by typing the command:
-
-```
 nano top_100_cmc.py
 ```
 
