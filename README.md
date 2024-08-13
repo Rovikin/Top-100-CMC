@@ -22,6 +22,6 @@ After changing your API, please save it by clicking ctrl+o+enter and then clicki
 After that, please run it using the command:
 
 ```
-python top_100_cmc_.py
+python top_100_cmc.py
 
 ```
