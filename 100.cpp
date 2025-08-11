@@ -5,6 +5,7 @@
 
 using json = nlohmann::json;
 
+// Callback curl untuk nampung response
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s) {
     size_t totalSize = size * nmemb;
     s->append((char*)contents, totalSize);
@@ -33,11 +34,15 @@ std::string http_get(const std::string& url) {
 }
 
 std::string format_price(double p) {
+    const std::string BLUE = "\033[94m";
+    const std::string RESET = "\033[0m";
+
     char buffer[32];
     if (p >= 1.0) snprintf(buffer, sizeof(buffer), "$%.2f", p);
     else if (p >= 0.01) snprintf(buffer, sizeof(buffer), "$%.4f", p);
     else snprintf(buffer, sizeof(buffer), "$%.6f", p);
-    return std::string(buffer);
+
+    return BLUE + std::string(buffer) + RESET;
 }
 
 std::string format_percent_colored(double pct) {
@@ -53,6 +58,45 @@ std::string format_percent_colored(double pct) {
         snprintf(buffer, sizeof(buffer), "%.2f%%", pct);
         return RED + std::string(buffer) + RESET;
     }
+}
+
+// Warna merah untuk from_ath, dengan tanda minus '-'
+std::string format_percent_red_minus(double pct) {
+    const std::string RED = "\033[31m";
+    const std::string RESET = "\033[0m";
+
+    char buffer[20];
+    snprintf(buffer, sizeof(buffer), "-%.2f%%", pct);
+    return RED + std::string(buffer) + RESET;
+}
+
+// Warna kuning untuk to_ath, dengan tanda plus '+'
+std::string format_percent_yellow_plus(double pct) {
+    const std::string YELLOW = "\033[33m";
+    const std::string RESET = "\033[0m";
+
+    char buffer[20];
+    snprintf(buffer, sizeof(buffer), "+%.2f%%", pct);
+    return YELLOW + std::string(buffer) + RESET;
+}
+
+// Fungsi helper buat print label dan value sekaligus dengan warna sama
+void print_colored_line(const std::string& label, const std::string& colored_value) {
+    size_t esc_start = colored_value.find("\033[");
+    if (esc_start == std::string::npos) {
+        std::cout << label << colored_value << "\n";
+        return;
+    }
+    size_t esc_end = colored_value.find("m", esc_start);
+    if (esc_end == std::string::npos) {
+        std::cout << label << colored_value << "\n";
+        return;
+    }
+    std::string color_code = colored_value.substr(esc_start, esc_end - esc_start + 1);
+
+    const std::string RESET = "\033[0m";
+
+    std::cout << color_code << label << RESET << colored_value << "\n";
 }
 
 int main() {
@@ -73,10 +117,17 @@ int main() {
             return 1;
         }
 
+        const std::string BROWN_LIGHT = "\033[93m"; // coklat muda (ticker)
+        const std::string BLUE = "\033[94m";        // biru (peringkat)
+        const std::string BROWN_DARK = "\033[33m";  // coklat tua (garis batas)
+        const std::string RESET = "\033[0m";
+
         for (size_t i = 0; i < j.size(); ++i) {
             auto& coin = j[i];
 
             std::string symbol = coin.value("symbol", "N/A");
+            for (auto & c: symbol) c = toupper(c); // kapital semua
+
             double price = coin.value("current_price", 0.0);
             double change_24h = coin.value("price_change_percentage_24h", 0.0);
             double change_7d = coin.value("price_change_percentage_7d_in_currency", 0.0);
@@ -85,19 +136,36 @@ int main() {
 
             double from_ath = 0.0;
             double to_ath = 0.0;
-            if (ath > 0.0) {
+            if (price > 0.0 && ath > 0.0) {
                 from_ath = ((ath - price) / ath) * 100.0;
-                to_ath = ((price - ath) / ath) * 100.0;
+                if (from_ath < 0) from_ath = 0;
+
+                to_ath = ((ath - price) / price) * 100.0;
+                if (to_ath < 0) to_ath = 0;
             }
 
-            std::cout << "#" << (i+1) << " " << symbol << "\n";
-            std::cout << "  Price       : " << format_price(price) << "\n";
-            std::cout << "  24H Change  : " << format_percent_colored(change_24h) << "\n";
-            std::cout << "  7D Change   : " << format_percent_colored(change_7d) << "\n";
-            std::cout << "  30D Change  : " << format_percent_colored(change_30d) << "\n";
-            std::cout << "  ↑ To ATH    : " << format_percent_colored(to_ath) << "\n";
-            std::cout << "  ↓ From ATH  : " << format_percent_colored(from_ath) << "\n";
-            std::cout << "----------------------------------------\n";
+            // Format tiap value
+            std::string price_str = format_price(price);
+            std::string ath_str = format_price(ath);
+            std::string change_24h_str = format_percent_colored(change_24h);
+            std::string change_7d_str = format_percent_colored(change_7d);
+            std::string change_30d_str = format_percent_colored(change_30d);
+            std::string from_ath_str = format_percent_red_minus(from_ath);
+            std::string to_ath_str = format_percent_yellow_plus(to_ath);
+
+            // Print peringkat warna biru dan ticker warna coklat muda
+            std::cout << BLUE << "#" << (i+1) << RESET << " " << BROWN_LIGHT << symbol << RESET << "\n";
+
+            print_colored_line("  Price       : ", price_str);
+            print_colored_line("  24H Change  : ", change_24h_str);
+            print_colored_line("  7D Change   : ", change_7d_str);
+            print_colored_line("  30D Change  : ", change_30d_str);
+            print_colored_line("  ↓ From ATH  : ", from_ath_str);
+            print_colored_line("  ↑ To ATH    : ", to_ath_str);
+            print_colored_line("  ATH Price   : ", ath_str);
+
+            // Garis batas warna coklat tua
+            std::cout << BROWN_DARK << "----------------------------------------" << RESET << "\n";
         }
 
     } catch (json::parse_error& e) {
