@@ -60,7 +60,6 @@ std::string format_percent_colored(double pct) {
     }
 }
 
-// Warna merah untuk from_ath, dengan tanda minus '-'
 std::string format_percent_red_minus(double pct) {
     const std::string RED = "\033[31m";
     const std::string RESET = "\033[0m";
@@ -70,7 +69,6 @@ std::string format_percent_red_minus(double pct) {
     return RED + std::string(buffer) + RESET;
 }
 
-// Warna kuning untuk to_ath, dengan tanda plus '+'
 std::string format_percent_yellow_plus(double pct) {
     const std::string YELLOW = "\033[33m";
     const std::string RESET = "\033[0m";
@@ -80,7 +78,6 @@ std::string format_percent_yellow_plus(double pct) {
     return YELLOW + std::string(buffer) + RESET;
 }
 
-// Fungsi helper buat print label dan value sekaligus dengan warna sama
 void print_colored_line(const std::string& label, const std::string& colored_value) {
     size_t esc_start = colored_value.find("\033[");
     if (esc_start == std::string::npos) {
@@ -97,6 +94,13 @@ void print_colored_line(const std::string& label, const std::string& colored_val
     const std::string RESET = "\033[0m";
 
     std::cout << color_code << label << RESET << colored_value << "\n";
+}
+
+double safe_get_double(const json& j, const std::string& key) {
+    if (j.contains(key) && !j[key].is_null()) {
+        return j[key].get<double>();
+    }
+    return 0.0;
 }
 
 int main() {
@@ -117,22 +121,22 @@ int main() {
             return 1;
         }
 
-        const std::string BROWN_LIGHT = "\033[93m"; // coklat muda (ticker)
-        const std::string BLUE = "\033[94m";        // biru (peringkat)
-        const std::string BROWN_DARK = "\033[33m";  // coklat tua (garis batas)
+        const std::string BROWN_LIGHT = "\033[93m";
+        const std::string BLUE = "\033[94m";
+        const std::string BROWN_DARK = "\033[33m";
         const std::string RESET = "\033[0m";
 
         for (size_t i = 0; i < j.size(); ++i) {
             auto& coin = j[i];
 
             std::string symbol = coin.value("symbol", "N/A");
-            for (auto & c: symbol) c = toupper(c); // kapital semua
+            for (auto & c: symbol) c = toupper(c);
 
-            double price = coin.value("current_price", 0.0);
-            double change_24h = coin.value("price_change_percentage_24h", 0.0);
-            double change_7d = coin.value("price_change_percentage_7d_in_currency", 0.0);
-            double change_30d = coin.value("price_change_percentage_30d_in_currency", 0.0);
-            double ath = coin.value("ath", 0.0);
+            double price = safe_get_double(coin, "current_price");
+            double change_24h = safe_get_double(coin, "price_change_percentage_24h");
+            double change_7d = safe_get_double(coin, "price_change_percentage_7d_in_currency");
+            double change_30d = safe_get_double(coin, "price_change_percentage_30d_in_currency");
+            double ath = safe_get_double(coin, "ath");
 
             double from_ath = 0.0;
             double to_ath = 0.0;
@@ -144,7 +148,6 @@ int main() {
                 if (to_ath < 0) to_ath = 0;
             }
 
-            // Format tiap value
             std::string price_str = format_price(price);
             std::string ath_str = format_price(ath);
             std::string change_24h_str = format_percent_colored(change_24h);
@@ -153,7 +156,6 @@ int main() {
             std::string from_ath_str = format_percent_red_minus(from_ath);
             std::string to_ath_str = format_percent_yellow_plus(to_ath);
 
-            // Print peringkat warna biru dan ticker warna coklat muda
             std::cout << BLUE << "#" << (i+1) << RESET << " " << BROWN_LIGHT << symbol << RESET << "\n";
 
             print_colored_line("  Price       : ", price_str);
@@ -164,12 +166,11 @@ int main() {
             print_colored_line("  ↑ To ATH    : ", to_ath_str);
             print_colored_line("  ATH Price   : ", ath_str);
 
-            // Garis batas warna coklat tua
             std::cout << BROWN_DARK << "----------------------------------------" << RESET << "\n";
         }
 
-    } catch (json::parse_error& e) {
-        std::cerr << "JSON parse error: " << e.what() << "\n";
+    } catch (json::exception& e) {
+        std::cerr << "JSON error: " << e.what() << "\n";
         return 1;
     } catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
