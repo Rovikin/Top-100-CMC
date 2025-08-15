@@ -25,3 +25,15 @@ After that, please run it using the command:
 python top_100_cmc.py
 
 ```
+## Update For C++
+
+I've added new support for the C++ version. This time, you don't need a CMC API key. I'm using the Coingecko API. You can see there is a '100.cpp' file there.
+
+Follow these commands to compile it:
+```cpp
+g++ -std=c++17 -o 100 100.cpp -lcurl
+```
+untuk menjalankannya cukup ketik:
+```shell
+./100
+```
